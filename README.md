@@ -37,17 +37,6 @@ We compared two pipelines:
 - **PSNR and SSIM** between the clean image and the denoised image.
 - **PSNR and SSIM** of the final enhanced image. Our dataset does not have normal-light photos for the same scenes, so we compared against what Zero-DCE++ gives on the noise-free image. This is not the same as comparing with a real bright photo, so the numbers should be read with that in mind.
 
-## Results
-
-| Noise | Identification accuracy | Noisy PSNR | Denoised PSNR | Baseline PSNR | Our PSNR |
-|---|---|---|---|---|---|
-| Gaussian | | | | | |
-| Poisson | | | | | |
-| Salt and Pepper | | | | | |
-| Overall | | | | | |
-
-The full scores are in `results/metrics.csv` and the images are in `results/figures/`.
-
 ## Folder structure
 
 ```
