@@ -53,6 +53,31 @@ requirements.txt          libraries needed
 3. Some cells use `files.upload()`, which only works in Colab.
 
 To run on your own computer: `pip install -r requirements.txt` and open the notebook in Jupyter. You will need to change the upload cells to normal file paths.
+## Results
+ 
+Identification accuracy of the noise identifier on the test images: **68.44%**
+ 
+**PSNR (higher is better)**
+ 
+| Noise | Identification accuracy | Noisy PSNR | Denoised PSNR | Baseline PSNR | Our PSNR |
+|---|---|---|---|---|---|
+| Gaussian | 77.3% | 29.10 | 29.26 | 19.30 | 18.91 |
+| Poisson | 28.0% | 27.63 | 27.35 | 19.88 | 18.26 |
+| Salt and Pepper | 100.0% | 19.95 | 19.98 | 20.84 | 20.84 |
+| Overall | 68.4% | 25.56 | 25.53 | 20.01 | 19.34 |
+ 
+**SSIM (higher is better)**
+ 
+| Noise | Noisy SSIM | Denoised SSIM | Baseline SSIM | Our SSIM |
+|---|---|---|---|---|
+| Gaussian | 0.558 | 0.577 | 0.381 | 0.407 |
+| Poisson | 0.598 | 0.491 | 0.394 | 0.342 |
+| Salt and Pepper | 0.557 | 0.557 | 0.586 | 0.585 |
+| Overall | 0.571 | 0.542 | 0.454 | 0.445 |
+ 
+Note: the Noisy and Denoised columns are compared with the clean image. The Baseline and Our columns are compared with the Zero-DCE++ output of the clean image, so those two groups of columns should not be compared with each other directly.
+ 
+The full scores are in `results/metrics.csv` and the images are in `results/figures/`.
 
 ## Dataset
 
