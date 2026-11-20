@@ -1,0 +1,19 @@
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Cloned third-party code and weights (fetched by the notebook at runtime)
+Zero-DCE/
+Zero-DCE_extension/
+
+# Trained checkpoints and bulky data
+checkpoints/
+*.pth
+*.npy
+lowlight_train/
+lowlight_eval/
+paired/
+
+# OS files
+.DS_Store
