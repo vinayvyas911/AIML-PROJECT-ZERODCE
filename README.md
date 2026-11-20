@@ -1,149 +1,92 @@
-# Noise-Aware Low-Light Image Enhancement
+# AIML Project: Noise Detection, Removal and Low-Light Enhancement
 
-A Colab-based study of what happens when a low-light enhancement network
-(Zero-DCE / Zero-DCE++) is fed images that are corrupted by noise, and whether
-detecting the noise first and cleaning it improves the result.
+This is our AIML project. The idea is simple: dark images from a phone or camera often come with noise, and when we brighten them the noise also becomes brighter and the image looks worse. So in this project we first add noise to images, then find out which type of noise it is, remove it, and then brighten the image using Zero-DCE++.
 
-The pipeline corrupts images with three kinds of noise, predicts which kind
-was applied, removes it with a trained denoiser, brightens the cleaned image,
-and measures quality and classification accuracy at every stage.
+## What the project does
 
-## Why this project
+1. Takes low-light images.
+2. Adds 3 types of noise to them.
+3. Uses a small CNN to guess which noise was added.
+4. Removes the noise using a denoising network that we trained.
+5. Enhances the cleaned image using the pretrained Zero-DCE++ model.
+6. Checks how good the results are using accuracy, PSNR and SSIM.
 
-Low-light enhancers amplify everything in a dark image, including noise. A
-curve-based enhancer such as Zero-DCE brightens pixels but has no mechanism
-for suppressing grain, so noisy inputs come out visibly worse. Different noise
-sources also behave differently (additive, signal-dependent, impulsive), so a
-single generic cleaner is a compromise. Here the cleaner is told what it is
-dealing with.
+## Types of noise used
 
-## Pipeline
-
-```
-clean low-light image
-        |
-   add noise  (Gaussian | Poisson | Salt & Pepper, 3 strengths each)
-        |
-   noise identifier  (small CNN -> noise type + strength)
-        |
-   noise-conditioned denoiser  (uses the predicted type and strength)
-        |
-   Zero-DCE++ enhancement
-        |
-   evaluation  (identification accuracy, PSNR, SSIM)
-```
-
-### Noise models
-
-| Noise | Nature | Strengths used |
+| Noise | How it looks | Values we used |
 |---|---|---|
-| Gaussian | additive, signal independent | sigma = 5/255, 10/255, 20/255 |
-| Poisson | signal dependent (shot noise) | peak = 120, 60, 30 |
-| Salt & Pepper | impulsive, random black/white pixels | density = 1%, 3%, 5% |
+| Gaussian | fine grain over the whole image | sigma = 5/255, 10/255, 20/255 |
+| Poisson | grain that depends on pixel brightness | peak = 120, 60, 30 |
+| Salt and Pepper | random black and white dots | 1%, 3%, 5% of pixels |
 
-### Components
+## How it works
 
-1. **Noise identifier.** A compact CNN. Its input is the noisy image plus a
-   high-pass residual (image minus a 3x3 local average), which makes the noise
-   pattern easier to see. It has two heads: a 3-way classifier for the noise
-   type and a regressor for the strength within that type's range.
-2. **Noise-conditioned denoiser.** A five-layer convolutional network that
-   receives the noisy image together with the noise type (one-hot) and strength
-   as extra input channels. It predicts the noise residual and subtracts it
-   from the input. It is trained with a Charbonnier-style loss.
-3. **Enhancer.** The pretrained Zero-DCE++ curve estimator, used as published
-   and not retrained.
+**Noise identifier:** A small CNN that looks at the noisy image and predicts which of the 3 noises it has and roughly how strong it is. We also give it a "high-pass" version of the image (image minus its blurred version) because that shows the noise pattern more clearly.
 
-### Compared pipelines
+**Denoiser:** Another CNN that takes the noisy image along with the noise type and strength, and learns to predict the noise so it can be subtracted from the image. Since it knows the noise type, it can handle each noise differently.
 
-- **Baseline:** noisy image -> Zero-DCE++
-- **Proposed:** noisy image -> identifier -> denoiser -> Zero-DCE++
+**Enhancer:** We did not train this part. We used the pretrained Zero-DCE++ model from the original authors (see credits).
 
-## Metrics
+We compared two pipelines:
+- Baseline: noisy image -> Zero-DCE++
+- Ours: noisy image -> identify noise -> denoise -> Zero-DCE++
 
-- **Identification accuracy:** overall, per noise type, and as a confusion matrix.
-- **PSNR and SSIM** between the clean low-light image and the denoiser output.
-- **PSNR and SSIM** of the enhanced result, computed against the enhancement of
-  the noise-free image. The dataset has no normal-light ground truth, so this
-  measures how close each pipeline gets to what Zero-DCE++ would produce without
-  any noise. It is not a comparison with a true well-lit photograph.
+## How we measured results
+
+- **Accuracy** of the noise identifier (overall, for each noise, and a confusion matrix).
+- **PSNR and SSIM** between the clean image and the denoised image.
+- **PSNR and SSIM** of the final enhanced image. Our dataset does not have normal-light photos for the same scenes, so we compared against what Zero-DCE++ gives on the noise-free image. This is not the same as comparing with a real bright photo, so the numbers should be read with that in mind.
 
 ## Results
 
-Fill this table from `results/metrics.csv` after running the notebook.
-
-| Noise | ID accuracy | Noisy PSNR | Denoised PSNR | Baseline PSNR | Proposed PSNR |
+| Noise | Identification accuracy | Noisy PSNR | Denoised PSNR | Baseline PSNR | Our PSNR |
 |---|---|---|---|---|---|
 | Gaussian | | | | | |
 | Poisson | | | | | |
-| Salt & Pepper | | | | | |
-| **Overall** | | | | | |
+| Salt and Pepper | | | | | |
+| Overall | | | | | |
 
-Sample outputs are stored in `results/figures/`.
+The full scores are in `results/metrics.csv` and the images are in `results/figures/`.
 
-## Repository layout
+## Folder structure
 
 ```
-.
-├── notebook/
-│   └── ZeroDce.ipynb      # full experiment
-├── results/
-│   ├── metrics.csv        # per-image, per-noise, per-level scores
-│   └── figures/           # confusion matrix and visual comparisons
-├── requirements.txt
-├── .gitignore
-└── README.md
+notebook/ZeroDce.ipynb    main notebook with all the code
+results/metrics.csv       scores for every image and noise level
+results/figures/          confusion matrix and before/after images
+requirements.txt          libraries needed
 ```
 
 ## How to run
 
 1. Open `notebook/ZeroDce.ipynb` in Google Colab.
-2. Run the cells in order. The notebook clones the official Zero-DCE and
-   Zero-DCE++ repositories at runtime, so their code and weights are not
-   stored here.
-3. A GPU runtime is optional; training on CPU works but is slower.
+2. Run the cells one by one from the top. The notebook downloads the original Zero-DCE code and weights by itself, so they are not kept in this repo.
+3. Some cells use `files.upload()`, which only works in Colab.
 
-To run locally instead:
+To run on your own computer: `pip install -r requirements.txt` and open the notebook in Jupyter. You will need to change the upload cells to normal file paths.
 
-```bash
-pip install -r requirements.txt
-jupyter notebook notebook/ZeroDce.ipynb
-```
+## Dataset
 
-The notebook's upload cells (`files.upload()`) are Colab-specific and need to be
-replaced with local file paths if you run it outside Colab.
-
-## Data
-
-The experiments use the low-light sample images that ship with the official
-Zero-DCE repository (DICM and related folders), split 80/20 into training and
-evaluation sets with a fixed seed. These are few images, so the numbers are
-indicative rather than definitive.
+We used the sample low-light images that come with the Zero-DCE repository (the DICM folder). We split them 80% for training and 20% for testing.
 
 ## Limitations
 
-- Small training and evaluation sets.
-- Noise is synthetic; real sensor noise mixes several sources.
-- The denoiser was trained for a short schedule, and its loss decreases slowly.
-- Poisson noise on very dark pixels is weak, so it can be confused with
-  low-level Gaussian noise.
-- Enhancement quality is measured against a pseudo-reference, as described above.
+- The dataset is small, so the results are only a rough idea.
+- The noise is added by code, real camera noise is more complicated.
+- We trained the denoiser for only 15 epochs and the loss went down slowly, so it can be improved with more training.
+- Poisson noise on very dark pixels is very weak, so the identifier sometimes mixes it up with Gaussian noise.
 
 ## Credits
 
-This work builds on the following, which should be cited if you reuse it:
+- Zero-DCE: Guo et al., "Zero-Reference Deep Curve Estimation for Low-Light Image Enhancement", CVPR 2020. Code: https://github.com/Li-Chongyi/Zero-DCE
+- Zero-DCE++: Li, Guo and Loy, "Learning to Enhance Low-Light Image via Zero-Reference Deep Curve Estimation", TPAMI 2021. Code: https://github.com/Li-Chongyi/Zero-DCE_extension
 
-- C. Guo, C. Li, J. Guo, C. C. Loy, J. Hou, S. Kwong, R. Cong.
-  *Zero-Reference Deep Curve Estimation for Low-Light Image Enhancement.* CVPR 2020.
-- C. Li, C. Guo, C. C. Loy.
-  *Learning to Enhance Low-Light Image via Zero-Reference Deep Curve Estimation.*
-  IEEE TPAMI, 2021 (Zero-DCE++).
-- Official code: https://github.com/Li-Chongyi/Zero-DCE and
-  https://github.com/Li-Chongyi/Zero-DCE_extension
+The enhancement model is from the above authors. The noise code, noise identifier, denoiser and evaluation are written by us for this project.
 
-The noise models, noise identifier, noise-conditioned denoiser and evaluation
-code are original to this project.
+## Submitted by
 
-## Author
+Vinay Vyas and Anklesh Pathak
 
-Your Name, Your Institution, Your Course
+## Submitted to
+
+Ankush Jain
