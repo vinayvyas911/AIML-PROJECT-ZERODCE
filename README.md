@@ -99,8 +99,8 @@ The enhancement model is from the above authors. The noise code, noise identifie
 
 ## Submitted by
 
-Vinay Vyas and Anklesh Pathak
+Vinay Vyas (2026PIT4205) and Anklesh Pathak (2026PIT4217)
 
 ## Submitted to
 
-Ankush Jain
+Dr. Ankush Jain [NSUT DELHI] 
